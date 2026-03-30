@@ -1,0 +1,53 @@
+FROM node:22-alpine AS builder
+WORKDIR /workspace
+
+# pnpm
+RUN npm install -g pnpm@latest --quiet
+
+# Bağımlılıklar
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY lib/ lib/
+COPY artifacts/api-server/ artifacts/api-server/
+
+RUN pnpm install --frozen-lockfile --silent
+
+# DB build
+RUN cd lib/db && npx tsc -p tsconfig.json
+
+# API build
+RUN cd artifacts/api-server && pnpm run build
+
+# ── Runtime ──────────────────────────────────────────────────
+FROM node:22-alpine AS runner
+WORKDIR /workspace
+
+RUN apk add --no-cache wget unzip openssl ca-certificates
+
+# Xray-core
+RUN ARCH=$(uname -m | sed 's/x86_64/linux-64/;s/aarch64/linux-arm64-v8a/') && \
+    VER=$(wget -qO- https://api.github.com/repos/XTLS/Xray-core/releases/latest \
+          | grep -oP '"tag_name":\s*"v\K[^"]+' | head -1 || echo "24.9.30") && \
+    wget -q "https://github.com/XTLS/Xray-core/releases/download/v${VER}/Xray-${ARCH}.zip" \
+         -O /tmp/xray.zip && \
+    cd /tmp && unzip -oq xray.zip xray && \
+    install -m 755 xray /usr/local/bin/xray && \
+    mkdir -p /usr/local/share/xray && \
+    wget -q "https://github.com/XTLS/Xray-core/releases/latest/download/geoip.dat" \
+         -O /usr/local/share/xray/geoip.dat || true && \
+    wget -q "https://github.com/XTLS/Xray-core/releases/latest/download/geosite.dat" \
+         -O /usr/local/share/xray/geosite.dat || true && \
+    rm -rf /tmp/xray*
+
+RUN mkdir -p /etc/xray /var/log/xray /etc/ssl/xray
+
+# Derlenmiş dosyaları kopyala
+COPY --from=builder /workspace/artifacts/api-server/dist/ ./artifacts/api-server/dist/
+COPY --from=builder /workspace/artifacts/api-server/package.json ./artifacts/api-server/
+COPY --from=builder /workspace/node_modules/ ./node_modules/
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
+  CMD wget -qO- http://localhost:8080/api/health || exit 1
+
+CMD ["node", "--enable-source-maps", "artifacts/api-server/dist/index.mjs"]
