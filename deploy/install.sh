@@ -163,7 +163,7 @@ step "4/8 — Frontend build (Professional X Panel)"
 cd "$INSTALL_DIR"
 
 info "Bağımlılıklar yükleniyor..."
-pnpm install --frozen-lockfile 2>&1 | tail -5 | tee -a "$LOG_FILE"
+pnpm install --no-frozen-lockfile 2>&1 | tail -5 | tee -a "$LOG_FILE"
 
 info "Production build alınıyor (30-60 sn sürebilir)..."
 cd artifacts/marzban-dashboard
