@@ -1,177 +1,168 @@
-# Marzban Panel — Standalone VPN Management
+# Professional X Panel 🎭
 
-<p align="center">
-  <img src="https://img.shields.io/badge/version-0.8.4--standalone-blue?style=flat-square" />
-  <img src="https://img.shields.io/badge/xray--core-powered-orange?style=flat-square" />
-  <img src="https://img.shields.io/badge/lang-TR%20%7C%20EN%20%7C%20RU%20%7C%20TK-green?style=flat-square" />
-  <img src="https://img.shields.io/badge/license-MIT-lightgrey?style=flat-square" />
-</p>
+  > Marzban VPN Panel için özel tema ve cihaz/konum takip sistemi.
 
-Marzban'a uyumlu, bağımsız çalışan VPN yönetim paneli. PostgreSQL + Express backend, React frontend, Xray-core entegrasyonu.
+  ![Themes](https://img.shields.io/badge/Themes-3-red) ![Marzban](https://img.shields.io/badge/Marzban-Compatible-green) ![License](https://img.shields.io/badge/License-MIT-blue)
 
-## ✨ Özellikler
+  ## ✨ Özellikler
 
-| Özellik | Durum |
-|---------|-------|
-| Kullanıcı yönetimi (VLESS/VMess/Trojan/SS) | ✅ |
-| Xray-core entegrasyonu + otomatik reload | ✅ |
-| Otomatik trafik istatistiği senkronizasyonu | ✅ |
-| Subscription endpoint (`/sub/:user/:token`) | ✅ |
-| HWID cihaz kilitleme | ✅ |
-| Admin yönetimi (sudo/normal) | ✅ |
-| 4 dil desteği (🇹🇷 TR / 🇬🇧 EN / 🇷🇺 RU / 🇹🇲 TK) | ✅ |
-| Trafik grafikleri (Recharts) | ✅ |
-| Inbound & Host yönetimi | ✅ |
-| Node yönetimi | ✅ |
-| Subscription şablonları | ✅ |
-| Toplu kullanıcı işlemleri | ✅ |
-| QR kod paylaşımı | ✅ |
-| CLI terminal (macOS tarzı) | ✅ |
-| Docker desteği | ✅ |
-| Let's Encrypt / Self-signed SSL | ✅ |
+  - **3 Franchise Teması**: Marvel X • Ninja X (TMNT) • Kombat X (Mortal Kombat)
+  - **Animasyonlu Arka Planlar**: Her temaya özel parçacık/orb animasyonları
+  - **Cihaz & Konum Takibi**: Bağlanan cihazın markası, modeli ve şehri
+  - **Python Backend Entegrasyonu**: Gerçek zamanlı bağlantı geçmişi
+  - **Tüm Marzban İşlevleri Korundu**: V2Box, Xray, tüm protokoller çalışıyor
 
-## 🚀 Hızlı Kurulum (Ubuntu / Debian)
+  ## 🚀 Kurulum (Tek Komut)
 
-```bash
-sudo bash -c "$(curl -sL https://raw.githubusercontent.com/atajanatajanov62-wq/marzban-panel/main/install.sh)"
-```
+  Sunucunuzda root olarak çalıştırın:
 
-Kurulum yaklaşık 5-10 dakika sürer. Script:
-- Node.js 22, PostgreSQL, Nginx, Xray-core kurar
-- Veritabanını ve servisleri yapılandırır
-- `marzban` CLI komutunu kurar
-- (İsteğe bağlı) Let's Encrypt SSL kurar
+  ```bash
+  bash <(curl -fsSL https://raw.githubusercontent.com/atajanatajanov62-wq/marzban-panel/main/deploy/install.sh)
+  ```
 
-## 🐳 Docker ile Kurulum
+  > Script hem **Docker** hem de **bare-metal** Marzban kurulumlarını otomatik algılar.
 
-```bash
-git clone https://github.com/atajanatajanov62-wq/marzban-panel.git
-cd marzban-panel
+  ---
 
-# .env dosyasını düzenle
-cp .env.example .env
-nano .env
+  ## 📦 Manuel Kurulum
 
-# Başlat
-docker compose up -d
-```
+  ### 1. Kaynak Kodu İndir
 
-## 🖥️ `marzban` CLI Komutları
+  ```bash
+  git clone https://github.com/atajanatajanov62-wq/marzban-panel.git
+  cd marzban-panel
+  ```
 
-```bash
-marzban status      # Servis durumları
-marzban start       # Başlat
-marzban stop        # Durdur
-marzban restart     # Yeniden başlat
-marzban logs api    # API logları
-marzban logs xray   # Xray logları
-marzban update      # GitHub'dan güncelle
-marzban backup      # Veritabanı yedeği
-marzban restore     # Yedekten geri yükle
-marzban cli         # Etkileşimli terminal
-marzban uninstall   # Kaldır
-```
+  ### 2. Frontend Build Al
 
-## ⚙️ Yapılandırma
+  ```bash
+  # Node.js 18+ ve pnpm gerekli
+  npm install -g pnpm
+  pnpm install --frozen-lockfile
+  cd artifacts/marzban-dashboard
+  NODE_ENV=production BASE_PATH=/ pnpm build
+  # Çıktı: artifacts/marzban-dashboard/dist/public/
+  ```
 
-Tüm ayarlar `/etc/marzban/.env` dosyasındadır:
+  ### 3. Dosyaları Kopyala
 
-```env
-DATABASE_URL=postgresql://...
-JWT_SECRET=...
-XRAY_BIN=/usr/local/bin/xray
-XRAY_CERT_FILE=/etc/ssl/xray/cert.pem
-XRAY_KEY_FILE=/etc/ssl/xray/key.pem
-```
+  **Docker kurulum:**
+  ```bash
+  CONTAINER=$(docker ps --format '{{.Names}}' | grep marzban)
+  docker exec $CONTAINER find /app -name "index.html" # dashboard dizinini bul
+  docker cp artifacts/marzban-dashboard/dist/public/. $CONTAINER:/app/dashboard/
+  docker restart $CONTAINER
+  ```
 
-Tam örnek için [`.env.example`](.env.example) dosyasına bakın.
+  **Bare-metal kurulum:**
+  ```bash
+  # Marzban dashboard dizinini bul (ör: /opt/marzban/app/dashboard)
+  cp -r artifacts/marzban-dashboard/dist/public/. /opt/marzban/app/dashboard/
+  systemctl restart marzban
+  ```
 
-## 📡 API Endpoint'leri
+  ---
 
-| Method | Endpoint | Açıklama |
-|--------|---------|---------|
-| POST | `/api/admin/token` | JWT token al |
-| GET/POST/PUT/DELETE | `/api/user/:username` | Kullanıcı CRUD |
-| GET | `/api/users` | Kullanıcı listesi |
-| GET/POST/DELETE | `/api/inbound` | Inbound yönetimi |
-| GET/PUT | `/api/hosts` | Host/DNS ayarları |
-| GET/POST/DELETE | `/api/admin` | Admin yönetimi |
-| GET | `/sub/:user/:token` | Subscription (VPN istemcileri) |
-| GET | `/api/xray/status` | Xray durumu |
-| POST | `/api/xray/reload` | Xray config yenile |
-| GET | `/api/xray/config` | Xray config görüntüle |
+  ## 🔌 Backend Entegrasyonu (Cihaz & Konum Takibi)
 
-## 🏗️ Proje Yapısı
+  Gerçek bağlantı verisi için Python backend'e patch uygulanması gerekir:
 
-```
-marzban-panel/
-├── install.sh                  # Ana kurulum scripti
-├── docker-compose.yml          # Docker kurulumu
-├── Dockerfile.api              # API container
-├── Dockerfile.panel            # Panel container
-├── .env.example                # Örnek yapılandırma
-├── artifacts/
-│   ├── api-server/             # Express + TypeScript backend
-│   │   └── src/
-│   │       ├── routes/         # API route handlers
-│   │       └── lib/
-│   │           ├── xray.ts     # Xray config generator
-│   │           ├── xrayManager.ts # Xray process manager
-│   │           └── statsSync.ts   # Trafik istatistiği sync
-│   └── marzban-panel/          # React + Vite frontend
-│       └── src/
-│           ├── components/     # UI bileşenleri
-│           ├── pages/          # Sayfalar
-│           └── store/          # Zustand store
-├── lib/
-│   └── db/                     # Drizzle ORM + PostgreSQL schema
-└── deploy/
-    ├── install.sh              # (Eski) kurulum scripti
-    ├── manage.sh               # Yönetim yardımcısı
-    └── nginx.conf              # Docker Nginx config
-```
+  ```bash
+  # Bağımlılık kur
+  pip3 install httpx
 
-## 🔧 Geliştirme
+  # Patch uygula (Marzban otomatik algılanır)
+  python3 deploy/backend/apply_patch.py
 
-```bash
-git clone https://github.com/atajanatajanov62-wq/marzban-panel.git
-cd marzban-panel
-pnpm install
+  # Veya manuel yol belirt
+  python3 deploy/backend/apply_patch.py --marzban-path /opt/marzban
 
-# PostgreSQL bağlantısını ayarla
-cp .env.example .env
-# .env içinde DATABASE_URL'i düzenle
+  # Marzban'ı yeniden başlat
+  systemctl restart marzban
+  ```
 
-# DB şemasını oluştur
-cd lib/db && pnpm run push
+  Patch şunları yapar:
+  - `px_connections.py` modülünü Marzban app dizinine kopyalar
+  - `/api/user/{username}/connections` endpoint'i ekler
+  - Abonelik isteklerini izleyerek cihaz/IP/konum kaydeder
+  - Ayrı bir SQLite DB kullanır (Marzban DB'ye dokunmaz)
 
-# Geliştirme modunda başlat
-cd ../..
-pnpm --filter @workspace/api-server run dev   # API: :8080
-pnpm --filter @workspace/marzban-panel run dev # Panel: :21491
-```
+  ---
 
-**Varsayılan giriş:** `admin` / `admin`
+  ## 🎨 Tema Seçimi
 
-## 🔄 Güncelleme
+  Panel içinde sağ üstteki tema ikonuna tıklayarak 3 tema arasında geçiş yapabilirsiniz:
 
-```bash
-marzban update
-```
+  | Tema | Renk Paleti | Logo |
+  |------|-------------|------|
+  | Marvel X | Lacivert + Kırmızı | MX |
+  | Ninja X | Siyah + Yeşil | 🐢 |
+  | Kombat X | Siyah + Altın | ⚔ |
 
-Veya Docker ile:
-```bash
-cd /opt/marzban-panel
-git pull
-docker compose up -d --build
-```
+  ---
 
-## 📝 Lisans
+  ## 🔄 GitHub Actions ile Otomatik Release
 
-MIT License — Bkz. [LICENSE](LICENSE)
+  Repo'nun `.github/workflows/` klasörüne `github-actions-release.yml` dosyasını kopyalayın:
 
-## 🙏 Teşekkürler
+  ```bash
+  mkdir -p .github/workflows
+  cp github-actions-release.yml .github/workflows/release.yml
+  git add .github/workflows/release.yml
+  git commit -m "ci: add release workflow"
+  git push
+  ```
 
-- [Marzban](https://github.com/Gozargah/Marzban) — İlham kaynağı
-- [Xray-core](https://github.com/XTLS/Xray-core) — VPN altyapısı
-- [Drizzle ORM](https://orm.drizzle.team) — Veritabanı
+  Bundan sonra her `v*` tag'inde otomatik build + release oluşturulur:
+
+  ```bash
+  git tag v1.0.0
+  git push origin v1.0.0
+  ```
+
+  ---
+
+  ## 📁 Dosya Yapısı
+
+  ```
+  ├── artifacts/marzban-dashboard/   # Frontend kaynak kodu
+  │   ├── src/
+  │   │   ├── themes/themes.ts       # 3 tema tanımları
+  │   │   ├── contexts/ThemeContext.tsx
+  │   │   ├── components/marzban/
+  │   │   │   ├── DeviceInfo.tsx     # Cihaz & konum bileşeni
+  │   │   │   ├── Header.tsx         # Tema logosu
+  │   │   │   └── UserDialog.tsx     # Franchise banner
+  │   │   └── hooks-marzban/
+  │   │       └── useUserConnections.ts
+  │   └── deploy/
+  │       ├── install.sh             # Tek komutlu kurulum scripti
+  │       └── backend/
+  │           ├── px_connections.py  # Python backend modülü
+  │           └── apply_patch.py     # Otomatik patcher
+  └── github-actions-release.yml     # CI/CD workflow
+  ```
+
+  ---
+
+  ## 🐛 Sorun Giderme
+
+  **Panel yüklenmiyor:**
+  ```bash
+  # Marzban loglarını kontrol et
+  journalctl -u marzban -n 50
+  # veya Docker için
+  docker logs marzban --tail 50
+  ```
+
+  **Eski haline dönmek:**
+  ```bash
+  # Yedek otomatik alındı, geri yükle
+  python3 deploy/backend/apply_patch.py --undo
+  # Orijinal dashboard yedekleri: /app/dashboard.backup-YYYYMMDD-HHMMSS/
+  ```
+
+  ---
+
+  MIT License — [@atajanatajanov62-wq](https://github.com/atajanatajanov62-wq)
+  
