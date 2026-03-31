@@ -173,31 +173,39 @@ fi
 
 ok "Kaynak kodu: $INSTALL_DIR"
 
-# ── 4. Frontend build ─────────────────────────────────────
-step "4/8 — Frontend build (Professional X Panel)"
+# ── 4. Frontend dosyaları (hazır build — build gerekmez) ──
+step "4/8 — Frontend dosyaları indiriliyor (Node.js build gerekmez)"
 
 DASH_SRC="$INSTALL_DIR/artifacts/marzban-dashboard"
-cd "$DASH_SRC"
-
-info "Eski node_modules temizleniyor..."
-rm -rf node_modules pnpm-lock.yaml package-lock.json 2>/dev/null || true
-
-# pnpm'in workspace root'unu görmesini engelle (catalog: çözümlemesi atlanır)
-_WS="$INSTALL_DIR/pnpm-workspace.yaml"
-[[ -f "$_WS" ]] && mv "$_WS" "${_WS}.bak" && info "Workspace geçici devre dışı"
-
-info "Bağımlılıklar yükleniyor (pnpm — daha az RAM kullanır)..."
-NODE_OPTIONS="--max-old-space-size=1024" pnpm install --no-frozen-lockfile --prefer-offline 2>&1 | tail -8 | tee -a "$LOG_FILE"
-
-# Workspace'i geri yükle
-[[ -f "${_WS}.bak" ]] && mv "${_WS}.bak" "$_WS" && true
-
-info "Production build alınıyor (30-60 sn sürebilir)..."
-NODE_OPTIONS="--max-old-space-size=1024" NODE_ENV=production BASE_PATH=/ pnpm exec vite build --config vite.config.ts 2>&1 | tail -8 | tee -a "$LOG_FILE"
-
 DIST="$DASH_SRC/dist/public"
-[[ -f "$DIST/index.html" ]] || error "Build başarısız! Log: $LOG_FILE"
-ok "Build tamamlandı → $DIST"
+BASE_RAW="https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/deploy/dist"
+
+mkdir -p "$DIST"
+
+_dl() {
+  local url="$1" dest="$2"
+  if has curl; then
+    curl -fsSL "$url" -o "$dest" || error "İndirme başarısız: $url"
+  elif has wget; then
+    wget -qO "$dest" "$url" || error "İndirme başarısız: $url"
+  else
+    python3 -c "import urllib.request; urllib.request.urlretrieve('$url','$dest')" || error "İndirme başarısız: $url"
+  fi
+}
+
+info "Hazır build parçaları indiriliyor..."
+_dl "${BASE_RAW}/part1.b64" /tmp/px_p1.b64
+_dl "${BASE_RAW}/part2.b64" /tmp/px_p2.b64
+_dl "${BASE_RAW}/part3.b64" /tmp/px_p3.b64
+ok "Parçalar indirildi"
+
+info "Birleştiriliyor ve çıkartılıyor..."
+cat /tmp/px_p1.b64 /tmp/px_p2.b64 /tmp/px_p3.b64 | base64 -d > /tmp/px_dist.tar.gz
+tar -xzf /tmp/px_dist.tar.gz -C "$DIST"
+rm -f /tmp/px_p*.b64 /tmp/px_dist.tar.gz
+
+[[ -f "$DIST/index.html" ]] || error "Çıkartma başarısız! Log: $LOG_FILE"
+ok "Frontend hazır → $DIST"
 cd "$INSTALL_DIR"
 
 # ── 5. Marzban kurulumunu bul ─────────────────────────────
