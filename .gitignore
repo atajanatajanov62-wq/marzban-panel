@@ -47,26 +47,3 @@ Thumbs.db
 # Replit
 .cache/
 .local/
-
-# Environment variables (hassas - kesinlikle commit etme)
-.env
-.env.local
-.env.*.local
-# Örnek dosya dahil edilmeli:
-!.env.example
-
-# Xray yapılandırması
-config.json
-
-# SSL sertifikaları
-*.pem
-*.key
-*.crt
-*.p12
-
-# Marzban deploy bilgileri
-deploy/install-info.txt
-deploy/marzban-deploy*.tar.gz
-
-# Logs
-*.log
