@@ -180,13 +180,20 @@ DASH_SRC="$INSTALL_DIR/artifacts/marzban-dashboard"
 cd "$DASH_SRC"
 
 info "Eski node_modules temizleniyor..."
-rm -rf node_modules package-lock.json 2>/dev/null || true
+rm -rf node_modules pnpm-lock.yaml package-lock.json 2>/dev/null || true
 
-info "Bağımlılıklar yükleniyor (bu dizin: $DASH_SRC)..."
-NODE_OPTIONS="--max-old-space-size=1024" npm install --legacy-peer-deps 2>&1 | tail -8 | tee -a "$LOG_FILE"
+# pnpm'in workspace root'unu görmesini engelle (catalog: çözümlemesi atlanır)
+_WS="$INSTALL_DIR/pnpm-workspace.yaml"
+[[ -f "$_WS" ]] && mv "$_WS" "${_WS}.bak" && info "Workspace geçici devre dışı"
+
+info "Bağımlılıklar yükleniyor (pnpm — daha az RAM kullanır)..."
+NODE_OPTIONS="--max-old-space-size=1024" pnpm install --no-frozen-lockfile --prefer-offline 2>&1 | tail -8 | tee -a "$LOG_FILE"
+
+# Workspace'i geri yükle
+[[ -f "${_WS}.bak" ]] && mv "${_WS}.bak" "$_WS" && true
 
 info "Production build alınıyor (30-60 sn sürebilir)..."
-NODE_OPTIONS="--max-old-space-size=1024" NODE_ENV=production BASE_PATH=/ npx vite build --config vite.config.ts 2>&1 | tail -8 | tee -a "$LOG_FILE"
+NODE_OPTIONS="--max-old-space-size=1024" NODE_ENV=production BASE_PATH=/ pnpm exec vite build --config vite.config.ts 2>&1 | tail -8 | tee -a "$LOG_FILE"
 
 DIST="$DASH_SRC/dist/public"
 [[ -f "$DIST/index.html" ]] || error "Build başarısız! Log: $LOG_FILE"
