@@ -160,16 +160,16 @@ ok "Kaynak kodu: $INSTALL_DIR"
 # ── 4. Frontend build ─────────────────────────────────────
 step "4/8 — Frontend build (Professional X Panel)"
 
-cd "$INSTALL_DIR"
+DASH_SRC="$INSTALL_DIR/artifacts/marzban-dashboard"
+cd "$DASH_SRC"
 
-info "Bağımlılıklar yükleniyor..."
-pnpm install --no-frozen-lockfile 2>&1 | tail -5 | tee -a "$LOG_FILE"
+info "Bağımlılıklar yükleniyor (bu dizin: $DASH_SRC)..."
+npm install --legacy-peer-deps 2>&1 | tail -8 | tee -a "$LOG_FILE"
 
 info "Production build alınıyor (30-60 sn sürebilir)..."
-cd artifacts/marzban-dashboard
-NODE_ENV=production BASE_PATH=/ pnpm build 2>&1 | tail -8 | tee -a "$LOG_FILE"
+NODE_ENV=production BASE_PATH=/ npx vite build --config vite.config.ts 2>&1 | tail -8 | tee -a "$LOG_FILE"
 
-DIST="$INSTALL_DIR/artifacts/marzban-dashboard/dist/public"
+DIST="$DASH_SRC/dist/public"
 [[ -f "$DIST/index.html" ]] || error "Build başarısız! Log: $LOG_FILE"
 ok "Build tamamlandı → $DIST"
 cd "$INSTALL_DIR"
