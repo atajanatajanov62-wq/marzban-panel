@@ -163,6 +163,9 @@ step "4/8 — Frontend build (Professional X Panel)"
 DASH_SRC="$INSTALL_DIR/artifacts/marzban-dashboard"
 cd "$DASH_SRC"
 
+info "Eski node_modules temizleniyor..."
+rm -rf node_modules package-lock.json 2>/dev/null || true
+
 info "Bağımlılıklar yükleniyor (bu dizin: $DASH_SRC)..."
 npm install --legacy-peer-deps 2>&1 | tail -8 | tee -a "$LOG_FILE"
 
