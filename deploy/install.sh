@@ -98,6 +98,22 @@ done
 
 ok "Sistem bağımlılıkları hazır"
 
+# ── 1b. Swap (RAM yetersizse) ──────────────────────────────
+TOTAL_MEM=$(free -m 2>/dev/null | awk '/^Mem:/{print $2}' || echo "2048")
+SWAP_NOW=$(free -m 2>/dev/null | awk '/^Swap:/{print $2}' || echo "0")
+if [[ "$TOTAL_MEM" -lt 1500 && "$SWAP_NOW" -lt 512 ]]; then
+  step "1b/8 — Swap alanı oluşturuluyor (RAM: ${TOTAL_MEM}MB)"
+  SWAP_FILE="/swapfile-px"
+  if [[ ! -f "$SWAP_FILE" ]]; then
+    info "2GB swap dosyası oluşturuluyor..."
+    dd if=/dev/zero of="$SWAP_FILE" bs=1M count=2048 status=none && \
+      chmod 600 "$SWAP_FILE" && mkswap "$SWAP_FILE" -q && swapon "$SWAP_FILE" && \
+      ok "Swap etkinleştirildi: 2GB" || warn "Swap oluşturulamadı (devam ediliyor)"
+  else
+    swapon "$SWAP_FILE" 2>/dev/null && ok "Mevcut swap etkinleştirildi" || true
+  fi
+fi
+
 # ── 2. Node.js ────────────────────────────────────────────
 step "2/8 — Node.js & pnpm"
 
@@ -167,10 +183,10 @@ info "Eski node_modules temizleniyor..."
 rm -rf node_modules package-lock.json 2>/dev/null || true
 
 info "Bağımlılıklar yükleniyor (bu dizin: $DASH_SRC)..."
-npm install --legacy-peer-deps 2>&1 | tail -8 | tee -a "$LOG_FILE"
+NODE_OPTIONS="--max-old-space-size=1024" npm install --legacy-peer-deps 2>&1 | tail -8 | tee -a "$LOG_FILE"
 
 info "Production build alınıyor (30-60 sn sürebilir)..."
-NODE_ENV=production BASE_PATH=/ npx vite build --config vite.config.ts 2>&1 | tail -8 | tee -a "$LOG_FILE"
+NODE_OPTIONS="--max-old-space-size=1024" NODE_ENV=production BASE_PATH=/ npx vite build --config vite.config.ts 2>&1 | tail -8 | tee -a "$LOG_FILE"
 
 DIST="$DASH_SRC/dist/public"
 [[ -f "$DIST/index.html" ]] || error "Build başarısız! Log: $LOG_FILE"
